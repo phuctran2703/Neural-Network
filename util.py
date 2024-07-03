@@ -6,6 +6,7 @@ import pickle
 import gzip
 import glob
 import numpy as np
+import pandas as pd
 import sys
 
 import matplotlib.pyplot as plt
@@ -125,6 +126,68 @@ def get_mnist_data(sampling_step=20):
     print("Done reading")
     return train_x.astype(np.float32), train_y, val_x.astype(np.float32), val_y, test_x.astype(np.float32), test_y
 
+def get_star_data(path="data/star.npz"):
+    """get_star_data
+    
+    Load the data into 4 numpy arrays: train_x, train_y, test_x, test_y and return them
+    :param path: path to the eclipse dataset file
+    """
+    print('Reading star data...')
+    f = np.load(path)
+    train_x = f['train_x']
+    train_y = f['train_y'] 
+    test_x = f['test_x']
+    test_y = f['test_y']
+    print("Done reading")
+    return (train_x, train_y, test_x, test_y)
+
+def get_iris_data(path="data/iris.dat"):
+    """get_iris_data
+    
+    Load the data into 6 numpy arrays:
+    * train_x1
+    * train_x2
+    * train_x3
+    * test_x1
+    * test_x2
+    * test_x3
+    :param path: path to the iris dataset file
+    """ 
+    print('Reading iris data...')
+    dataIris = pd.read_table('data/iris.dat', sep='\\s+', header = None)
+    dataIris.head()
+
+    dataIris = dataIris.values
+    dataIris[:, 4] = dataIris[:, 4]
+    
+    x1 = dataIris[dataIris[:,4]==1, 0:4]
+    x2 = dataIris[dataIris[:,4]==2, 0:4]
+    x3 = dataIris[dataIris[:,4]==3, 0:4]
+    y1 = dataIris[dataIris[:,4]==1, 4]
+    y2 = dataIris[dataIris[:,4]==2, 4]
+    y3 = dataIris[dataIris[:,4]==3, 4]
+
+    train_x1 = x1[0:40,:]
+    test_x1 = x1[40:,:]
+    train_x2 = x2[0:40,:]
+    test_x2 = x2[40:,:]
+    train_x3 = x3[0:40,:]
+    test_x3 = x3[40:,:]
+
+    train_y1 = y1[0:40].reshape((40,1))
+    test_y1 = y1[40:].reshape((10,1))
+    train_y2 = y2[0:40].reshape((40,1))
+    test_y2 = y2[40:].reshape((10,1))
+    train_y3 = y3[0:40].reshape((40,1))
+    test_y3 = y3[40:].reshape((10,1))
+
+    train_x = np.concatenate((train_x1, train_x2, train_x3), axis=0)
+    train_y = np.concatenate((train_y1, train_y2, train_y3), axis=0)-1
+    test_x = np.concatenate((test_x1, test_x2, test_x3), axis=0)
+    test_y = np.concatenate((test_y1, test_y2, test_y3), axis=0)-1
+    print("Done reading")
+    return (train_x, train_y, test_x, test_y)
+
 
 def visualize_point(x, y, y_hat, fig=1):
     """visualize_point
@@ -135,7 +198,7 @@ def visualize_point(x, y, y_hat, fig=1):
     :param y: actual labels of the data points
     :param y_hat: predicted labels of the data points
     """
-    
+    y = np.asarray(y, dtype=int)
     color_map = np.asarray([
             [0,0,0],
             [1,1,0],
@@ -207,6 +270,7 @@ def create_one_hot(labels, num_k=10):
     :param labels: list of labels, each label is one of 0, 1, 2,... , num_k - 1
     :param num_k: number of classes we want to classify
     """
+    labels = np.asarray(labels, dtype=int)
     eye_mat = np.eye(num_k)
     return eye_mat[labels, :].astype(np.float32)
 
@@ -222,4 +286,5 @@ def add_one(x):
 
 
 if __name__ == '__main__':
-    get_mnist_data()
+    get_iris_data()
+    get_star_data()

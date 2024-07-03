@@ -79,7 +79,7 @@ class Layer(object):
         :param x: input of the layer
         :param delta_dot_w_prev: delta^(l+1) dot product with w^(l+1)T, computed from the next layer (in feedforward direction) or previous layer (in backpropagation direction)
         """
-        # [TODO 1.2]        
+        # [TODO 1.2]
         if self.activation == "sigmoid":
             delta = delta_dot_w_prev * sigmoid_grad(self.output)
             w_grad = np.dot(x.T, delta)
@@ -153,7 +153,7 @@ class NeuralNet(object):
         # Estimating regularization loss from all layers
         reg_loss = 0
         for i in range(len(self.layers)):
-            reg_loss += 1 / 2 * self.reg * np.sum(self.layers[i].w**2)
+            reg_loss += 1 / 2 * self.reg * np.sum(self.layers[i].w ** 2)
         data_loss += reg_loss
 
         return data_loss
@@ -166,7 +166,7 @@ class NeuralNet(object):
         """
         # [TODO 1.5] Compute delta factor from the output
         delta = all_x[-1] - y
-        # delta /= y.shape[0]
+        delta /= y.shape[0]
 
         # [TODO 1.5] Compute gradient of the loss function with respect to w of softmax layer, use delta from the output
         grad_last = np.dot(all_x[-2].T, delta) + self.reg * self.layers[-1].w
@@ -279,8 +279,9 @@ def minibatch_train(net, train_x, train_y, cfg):
     :param cfg: Config object
     """
     # [TODO 1.6] Implement mini-batch training
-    iteration = (int) (cfg.num_train[0] / cfg.batch_size)
-    
+    iteration = (int)(cfg.num_train[0] / cfg.batch_size)
+    all_loss = []
+
     for e in range(cfg.num_epoch):
         total_loss = 0
         permutation = np.random.permutation(cfg.num_train[0])
@@ -288,8 +289,12 @@ def minibatch_train(net, train_x, train_y, cfg):
         train_y_shuffled = train_y[permutation]
 
         for i in range(iteration):
-            train_spit_x = train_x_shuffled[i*cfg.batch_size:(i+1) * cfg.batch_size]
-            train_spit_y = train_y_shuffled[i*cfg.batch_size:(i+1) * cfg.batch_size]
+            train_spit_x = train_x_shuffled[
+                i * cfg.batch_size : (i + 1) * cfg.batch_size
+            ]
+            train_spit_y = train_y_shuffled[
+                i * cfg.batch_size : (i + 1) * cfg.batch_size
+            ]
             train_spit_y = create_one_hot(train_spit_y, net.num_class)
 
             all_x = net.forward(train_spit_x)
@@ -301,10 +306,19 @@ def minibatch_train(net, train_x, train_y, cfg):
 
             total_loss += loss
 
-        final_loss = total_loss/iteration
+        final_loss = total_loss / iteration
+
+        all_loss.append(loss)
+
+        if e % cfg.epochs_to_draw == cfg.epochs_to_draw - 1:
+            if cfg.visualize:
+                y_hat = net.forward(train_x[0::3])[-1]
+                visualize_point(train_x[0::3], train_y[0::3], y_hat)
+            plot_loss(all_loss, 2)
+            plt.show()
+            plt.pause(0.01)
 
         print("Epoch %d: loss is %.5f" % (e + 1, final_loss))
-
 
 
 def batch_train(net, train_x, train_y, cfg):
@@ -317,8 +331,8 @@ def batch_train(net, train_x, train_y, cfg):
     :param cfg: Config object
     """
 
-    train_set_x = train_x[: cfg.num_train].copy()
-    train_set_y = train_y[: cfg.num_train].copy()
+    train_set_x = train_x[: cfg.num_train[0]].copy()
+    train_set_y = train_y[: cfg.num_train[0]].copy()
     train_set_y = create_one_hot(train_set_y, net.num_class)
     all_loss = []
 
@@ -377,6 +391,85 @@ def bat_classification():
     batch_train(net, train_x, train_y, cfg)
 
     # Minibatch training - training dataset using Minibatch approach
+    minibatch_train(net, train_x, train_y, cfg)
+
+    y_hat = net.forward(test_x)[-1]
+    test(y_hat, test_y)
+
+
+def star_classification():
+    # Load data from file
+    # Make sure that bat.dat is in data/
+    train_x, train_y, test_x, test_y = get_star_data()
+    train_x, _, test_x = normalize(train_x, train_x, test_x)
+
+    test_y = test_y.flatten()
+    train_y = train_y.flatten()
+    num_class = (np.unique(train_y)).shape[0]
+
+    # Pad 1 as the third feature of train_x and test_x
+    train_x = add_one(train_x)
+    test_x = add_one(test_x)
+
+    # Define hyper-parameters and train-related parameters
+    cfg = Config(
+        num_epoch=400,
+        learning_rate=0.01,
+        batch_size=200,
+        num_train=train_x.shape,
+        visualize=True,
+    )
+
+    # Create NN classifier
+    num_hidden_nodes = 100
+    num_hidden_nodes_2 = 100
+    num_hidden_nodes_3 = 100
+    net = NeuralNet(num_class, cfg.reg)
+    net.add_linear_layer((train_x.shape[1], num_hidden_nodes), "relu")
+    net.add_linear_layer((num_hidden_nodes, num_hidden_nodes_2), "relu")
+    net.add_linear_layer((num_hidden_nodes_2, num_hidden_nodes_3), "relu")
+    net.add_linear_layer((num_hidden_nodes_3, num_class), "softmax")
+
+    # Minibatch training - training dataset using Minibatch approach
+    minibatch_train(net, train_x, train_y, cfg)
+
+    y_hat = net.forward(test_x)[-1]
+    test(y_hat, test_y)
+
+
+def iris_classification():
+    # Load data from file
+    # Make sure that bat.dat is in data/
+    train_x, train_y, test_x, test_y = get_iris_data()
+    train_x, _, test_x = normalize(train_x, train_x, test_x)
+
+    test_y = test_y.flatten()
+    train_y = train_y.flatten()
+    num_class = (np.unique(train_y)).shape[0]
+
+    # Pad 1 as the third feature of train_x and test_x
+    train_x = add_one(train_x)
+    test_x = add_one(test_x)
+
+    # Define hyper-parameters and train-related parameters
+    cfg = Config(
+        num_epoch=3000, learning_rate=0.001, num_train=train_x.shape, visualize=True
+    )
+
+    # Create NN classifier
+    num_hidden_nodes = 100
+    num_hidden_nodes_2 = 100
+    num_hidden_nodes_3 = 100
+    net = NeuralNet(num_class, cfg.reg)
+    net.add_linear_layer((train_x.shape[1], num_hidden_nodes), "relu")
+    net.add_linear_layer((num_hidden_nodes, num_hidden_nodes_2), "relu")
+    net.add_linear_layer((num_hidden_nodes_2, num_hidden_nodes_3), "relu")
+    net.add_linear_layer((num_hidden_nodes_3, num_class), "softmax")
+
+    # Batch training - train all dataset
+    batch_train(net, train_x, train_y, cfg)
+
+    # Minibatch training - training dataset using Minibatch approach
     # minibatch_train(net, train_x, train_y, cfg)
 
     y_hat = net.forward(test_x)[-1]
@@ -398,7 +491,7 @@ def mnist_classification():
 
     # Define hyper-parameters and train-related parameters
     cfg = Config(
-        num_epoch=300,
+        num_epoch=100,
         learning_rate=0.001,
         batch_size=200,
         num_train=train_x.shape,
@@ -431,6 +524,8 @@ if __name__ == "__main__":
 
     plt.ion()
     # bat_classification()
-    mnist_classification()
+    # mnist_classification()
+    star_classification()
+    # iris_classification()
 
     pdb.set_trace()
