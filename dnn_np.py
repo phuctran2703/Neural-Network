@@ -20,7 +20,6 @@ class Config(object):
         learning_rate=0.0005,
         momentum_rate=0.9,
         epochs_to_draw=10,
-        # reg=0.00015,
         reg=0.00001,
         num_train=1000,
         visualize=True,
@@ -80,16 +79,20 @@ class Layer(object):
         :param delta_dot_w_prev: delta^(l+1) dot product with w^(l+1)T, computed from the next layer (in feedforward direction) or previous layer (in backpropagation direction)
         """
         # [TODO 1.2]
+        z = np.dot(x, self.w)
         if self.activation == "sigmoid":
-            delta = delta_dot_w_prev * sigmoid_grad(self.output)
+            a = sigmoid(z)
+            delta = delta_dot_w_prev * sigmoid_grad(a)
             w_grad = np.dot(x.T, delta)
 
         elif self.activation == "tanh":
-            delta = delta_dot_w_prev * tanh_grad(self.output)
+            a = tanh(z)
+            delta = delta_dot_w_prev * tanh_grad(a)
             w_grad = np.dot(x.T, delta)
 
         elif self.activation == "relu":
-            delta = delta_dot_w_prev * reLU_grad(self.output)
+            a = reLU(z)
+            delta = delta_dot_w_prev * reLU_grad(a)
             w_grad = np.dot(x.T, delta)
 
         # [TODO 1.4] Implement L2 regularization on weights here
@@ -524,8 +527,8 @@ if __name__ == "__main__":
 
     plt.ion()
     # bat_classification()
-    # mnist_classification()
-    star_classification()
+    mnist_classification()
+    # star_classification()
     # iris_classification()
 
     pdb.set_trace()
